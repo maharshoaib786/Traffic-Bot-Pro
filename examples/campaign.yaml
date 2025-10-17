@@ -1,0 +1,14 @@
+name: Demo Campaign
+concurrency: 5
+delay_between_visits: 0.5
+visit_profiles:
+  - url: https://example.com
+    visits: 10
+    min_duration: 5
+    max_duration: 15
+    referrers:
+      - https://google.com
+      - https://bing.com
+    keywords:
+      - buy traffic
+      - boost seo
