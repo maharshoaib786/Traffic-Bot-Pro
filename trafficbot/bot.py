@@ -40,42 +40,41 @@ class TrafficBot:
         timeout = aiohttp.ClientTimeout(total=self.request_timeout)
         connector = aiohttp.TCPConnector(limit=self.config.concurrency)
         async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
-            semaphore = asyncio.Semaphore(self.config.concurrency)
-            tasks = []
+            worker_count = max(1, self.config.concurrency)
+            queue: asyncio.Queue[tuple[VisitProfile, int] | None] = asyncio.Queue(maxsize=worker_count)
+
+            async def worker() -> None:
+                while True:
+                    item = await queue.get()
+                    if item is None:
+                        queue.task_done()
+                        break
+
+                    profile, visit_idx = item
+                    try:
+                        await self._perform_visit(session, profile, visit_idx)
+                    finally:
+                        queue.task_done()
+
+            workers = [asyncio.create_task(worker()) for _ in range(worker_count)]
+
             visit_index = 0
             for profile in self.config.visit_profiles:
                 for _ in range(profile.visits):
                     visit_index += 1
-                    tasks.append(
-                        asyncio.create_task(
-                            self._bounded_visit(
-                                semaphore,
-                                session,
-                                profile,
-                                visit_index,
-                            )
-                        )
-                    )
+                    await queue.put((profile, visit_index))
                     if self.config.delay_between_visits:
                         await asyncio.sleep(self.config.delay_between_visits)
                 if self.config.delay_between_batches:
                     await asyncio.sleep(self.config.delay_between_batches)
 
-            if tasks:
-                await asyncio.gather(*tasks)
+            await queue.join()
+            for _ in workers:
+                await queue.put(None)
+            await asyncio.gather(*workers)
 
         _LOGGER.info("Campaign %s finished. %s", self.config.name, self.metrics.as_text())
         return self.metrics
-
-    async def _bounded_visit(
-        self,
-        semaphore: asyncio.Semaphore,
-        session: aiohttp.ClientSession,
-        profile: VisitProfile,
-        visit_index: int,
-    ) -> None:
-        async with semaphore:
-            await self._perform_visit(session, profile, visit_index)
 
     async def _perform_visit(
         self,
