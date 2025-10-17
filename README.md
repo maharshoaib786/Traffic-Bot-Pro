@@ -1,6 +1,6 @@
 # Traffic Bot Pro Toolkit
 
-Traffic Bot Pro Toolkit is a Python-based automation framework inspired by the feature set of [Traffic Bot Pro](https://www.trafficbotpro.com/). It enables you to simulate organic traffic visits, rotate proxies and user agents, schedule repeat campaigns and collect metrics for each run.
+Traffic Bot Pro Toolkit is a Python-based automation framework inspired by the feature set of [Traffic Bot Pro]. It enables you to simulate organic traffic visits, rotate proxies and user agents, schedule repeat campaigns and collect metrics for each run.
 
 > **Disclaimer:** Use automated traffic responsibly. Many platforms prohibit artificial traffic generation. Ensure you comply with the terms of service and local regulations for any site you target.
 
